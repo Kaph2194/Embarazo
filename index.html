@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nuestra Historia: El Secreto</title>
+    <!-- Fuentes: Special Elite para el misterio, Dancing Script y Montserrat para la ternura -->
+    <link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Dancing+Script:wght@700&family=Montserrat:wght@300;400;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --accent-white: #f8fafc;
+            --deep-blue: #0f172a;
+            --pastel-blue-bg: #f0f9ff;
+            --pastel-blue-text: #1e293b;
+        }
+
+        body {
+            background-color: var(--deep-blue);
+            color: var(--accent-white);
+            font-family: 'Montserrat', sans-serif;
+            margin: 0;
+            overflow-x: hidden;
+            transition: background 4s cubic-bezier(0.4, 0, 0.2, 1), color 4s ease;
+        }
+
+        /* Tipografía de misterio */
+        .mystery-font {
+            font-family: 'Special Elite', serif;
+        }
+
+        /* Tipografía suave de revelación */
+        .reveal-font {
+            font-family: 'Dancing Script', cursive;
+        }
+
+        /* Capa de textura sutil */
+        .overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: url('https://www.transparenttextures.com/patterns/stardust.png');
+            opacity: 0.1;
+            pointer-events: none;
+            z-index: 50;
+        }
+
+        .main-card {
+            border: 2px solid rgba(248, 250, 252, 0.2);
+            background: rgba(15, 23, 42, 0.9);
+            box-shadow: 0 0 80px rgba(0,0,0,0.9);
+            backdrop-filter: blur(15px);
+            transition: all 4s ease;
+        }
+
+        .revealed-card {
+            background: rgba(255, 255, 255, 0.98) !important;
+            border: 2px solid rgba(186, 230, 253, 0.6) !important;
+            color: var(--pastel-blue-text) !important;
+            box-shadow: 0 40px 150px rgba(186, 230, 253, 0.6) !important;
+        }
+
+        input {
+            background: transparent;
+            border-bottom: 3px solid var(--accent-white);
+            outline: none;
+            transition: border 0.3s;
+            color: white;
+            font-family: 'Special Elite', serif;
+        }
+
+        .btn-action {
+            border: 2px solid var(--accent-white);
+            transition: all 0.4s;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+        }
+
+        .btn-action:hover {
+            background: var(--accent-white);
+            color: var(--deep-blue);
+            box-shadow: 0 0 30px rgba(248, 250, 252, 0.5);
+            transform: scale(1.05);
+        }
+
+        .hidden-step { display: none; opacity: 0; }
+
+        .fade-in { animation: fadeIn 2.5s forwards; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(40px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .ultrasound-container {
+            width: 100%;
+            max-width: 900px; /* Contenedor de imagen mucho más ancho */
+            margin: 0 auto;
+        }
+
+        .ultrasound-img {
+            width: 100%;
+            height: auto;
+            border-radius: 10px;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.3);
+            border: 25px solid white; /* Marco estilo polaroid */
+            transform: rotate(1deg);
+            transition: transform 0.8s ease;
+            display: block;
+        }
+
+        .ultrasound-img:hover {
+            transform: rotate(0deg) scale(1.02);
+        }
+
+        #hint-text {
+            transition: opacity 0.6s ease;
+        }
+
+        .big-text-shadow {
+            text-shadow: 0 10px 30px rgba(14, 165, 233, 0.2);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4 md:p-8">
+    <div class="overlay"></div>
+
+    <!-- Audio del latido -->
+    <audio id="latido-audio" loop>
+        <source src="https://www.soundjay.com/human/heartbeat-01.mp3" type="audio/mpeg">
+    </audio>
+
+    <div id="container" class="main-card relative w-full max-w-3xl p-10 md:p-16 rounded-[3rem] text-center overflow-hidden">
+        
+        <!-- PASO 1: BIENVENIDA -->
+        <div id="step-login" class="fade-in mystery-font">
+            <h2 class="text-sm md:text-lg uppercase tracking-[0.5em] opacity-60 mb-8">Un misterio por descubrir</h2>
+            <h1 class="text-4xl md:text-6xl font-bold mb-12">NUESTRO CAMINO</h1>
+            <p class="text-xl md:text-2xl mb-12 opacity-80 leading-relaxed italic px-4">Escribe tu nombre para revelar lo que el destino nos tiene preparado.</p>
+            
+            <div class="max-w-md mx-auto">
+                <input type="text" id="username" placeholder="IDENTIFICACIÓN" 
+                       class="w-full py-4 px-6 text-center uppercase mb-12 text-2xl md:text-3xl tracking-[0.2em] font-bold">
+                <button onclick="startExperience()" class="btn-action w-full py-6 px-10 font-bold text-lg md:text-xl rounded-xl">
+                    INICIAR ACCESO
+                </button>
+                <div id="login-error" class="text-blue-300 text-sm mt-6 h-6 italic font-bold"></div>
+            </div>
+        </div>
+
+        <!-- PASO 2: PISTAS TIERNAS -->
+        <div id="step-hints" class="hidden-step">
+            <h2 id="hint-header" class="text-sm md:text-lg mb-16 opacity-50 tracking-[0.4em] uppercase font-bold text-blue-200 mystery-font">Procesando sentimientos...</h2>
+            <div class="min-h-[250px] flex items-center justify-center px-6">
+                <p id="hint-text" class="text-3xl md:text-5xl italic leading-relaxed text-white font-light"></p>
+            </div>
+            <div class="mt-16">
+                <button onclick="nextHint()" class="btn-action py-5 px-16 text-sm md:text-lg rounded-full mystery-font">
+                    SIGUIENTE HUELLA
+                </button>
+            </div>
+        </div>
+
+        <!-- PASO 3: EL MOMENTO FINAL -->
+        <div id="step-reveal" class="hidden-step">
+            <h1 class="text-4xl md:text-6xl font-bold mb-12 mystery-font">TODO ESTÁ LISTO</h1>
+            <p class="text-2xl md:text-4xl mb-20 opacity-90 leading-relaxed px-4">El latido que estabas esperando está a punto de sonar...</p>
+            <button onclick="showFinalMessage()" class="btn-action py-10 px-24 text-3xl md:text-5xl font-bold rounded-full bg-white/5 border-4 mystery-font">
+                DESCUBRIR LA VERDAD
+            </button>
+        </div>
+
+        <!-- PASO 4: REVELACIÓN FINAL GIGANTE -->
+        <div id="step-final" class="hidden-step">
+            <div class="fade-in space-y-12">
+                <h1 class="text-7xl md:text-[10rem] font-bold big-text-shadow leading-none reveal-font" style="color: #0ea5e9;">
+                    ¡Vamos a ser papás!
+                </h1>
+                
+                <p class="text-3xl md:text-5xl font-light text-slate-500 tracking-tight italic">
+                    Nuestra mayor aventura acaba de empezar...
+                </p>
+                
+                <div class="py-10">
+                    <div class="ultrasound-container relative">
+                        <!-- Imagen de la ecografía ocupando todo el ancho del marco -->
+                        <img id="ultrasound-img" src="https://drive.google.com/thumbnail?id=1oDeS7wVSdueLK08jiCgB-ynVknV8tGcA&sz=w1000" 
+                             alt="Nuestra primera ecografía" 
+                             class="ultrasound-img">
+                        
+                        <!-- Elementos decorativos flotantes -->
+                        <div class="absolute -top-16 -right-10 text-8xl md:text-[9rem] animate-pulse drop-shadow-lg">✨</div>
+                        <div class="absolute -bottom-16 -left-10 text-8xl md:text-[9rem] opacity-90 drop-shadow-lg">👶</div>
+                    </div>
+                </div>
+
+                <div class="pt-14 space-y-10">
+                    <p class="text-4xl md:text-6xl font-bold tracking-[0.2em] text-sky-400reveal-font">Bienvenido a la familia</p>
+                    <p class="text-2xl md:text-4xl font-light opacity-60 max-w-3xl mx-auto italic">El secreto mejor guardado de nuestras vidas.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Música de fondo (YouTube invisible) -->
+    <div id="player-container" class="hidden">
+        <div id="youtube-player"></div>
+    </div>
+
+    <script>
+        let currentHintIndex = 0;
+        const hints = [
+            "Algo maravilloso está creciendo en absoluto silencio...",
+            "A partir de hoy, nuestras vidas se llenarán de una luz nueva y pura.",
+            "Dos corazones han hecho espacio para un latido más pequeño pero muy fuerte.",
+            "Nuestra casa pronto se llenará de risas, pasos pequeños y un amor infinito.",
+            "La historia más bonita que jamás hayamos contado... ya tiene protagonista."
+        ];
+
+        // API de YouTube
+        var tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        var firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+        var player;
+        function onYouTubeIframeAPIReady() {
+            player = new YT.Player('youtube-player', {
+                height: '0', width: '0',
+                videoId: 'f7S9N78rX64',
+                playerVars: { 'autoplay': 0, 'controls': 0 }
+            });
+        }
+
+        function switchStep(oldId, newId) {
+            const oldEl = document.getElementById(oldId);
+            const newEl = document.getElementById(newId);
+            
+            // Expandimos el contenedor significativamente para el paso final
+            if (newId === 'step-final') {
+                const container = document.getElementById('container');
+                container.classList.remove('max-w-3xl');
+                container.classList.add('max-w-[1200px]'); 
+                container.style.padding = '5rem 2rem';
+            }
+
+            oldEl.style.opacity = '0';
+            setTimeout(() => {
+                oldEl.classList.add('hidden-step');
+                newEl.classList.remove('hidden-step');
+                newEl.classList.add('fade-in');
+            }, 800);
+        }
+
+        function startExperience() {
+            const name = document.getElementById('username').value;
+            if (name.trim().length < 2) {
+                document.getElementById('login-error').innerText = "IDENTIFICACIÓN REQUERIDA PARA CONTINUAR";
+                return;
+            }
+            if (player && player.playVideo) player.playVideo();
+            switchStep('step-login', 'step-hints');
+            displayHint();
+        }
+
+        function displayHint() {
+            const hintText = document.getElementById('hint-text');
+            const hintHeader = document.getElementById('hint-header');
+            hintText.innerText = hints[currentHintIndex];
+            hintHeader.innerText = `FRAGMENTO ${currentHintIndex + 1} DE ${hints.length}`;
+        }
+
+        function nextHint() {
+            currentHintIndex++;
+            if (currentHintIndex < hints.length) {
+                const hintText = document.getElementById('hint-text');
+                hintText.style.opacity = '0';
+                setTimeout(() => {
+                    displayHint();
+                    hintText.style.opacity = '1';
+                }, 500);
+            } else {
+                switchStep('step-hints', 'step-reveal');
+            }
+        }
+
+        function showFinalMessage() {
+            document.body.style.backgroundColor = "var(--pastel-blue-bg)";
+            document.body.style.color = "var(--pastel-blue-text)";
+            document.getElementById('container').classList.add('revealed-card');
+            
+            const heartbeat = document.getElementById('latido-audio');
+            heartbeat.volume = 0.7;
+            heartbeat.play();
+
+            switchStep('step-reveal', 'step-final');
+        }
+    </script>
+</body>
+</html>
