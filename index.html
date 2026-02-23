@@ -255,7 +255,97 @@
             font-size: clamp(1.15rem, 2.8vw, 1.6rem); color: #9b5777; line-height: 1.8;
         }
 
+
+        /* ── Cámara ── */
+        #camera-overlay {
+            position: fixed; inset: 0; z-index: 1000;
+            background: rgba(0,0,0,0.92);
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            gap: 1.2rem;
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.6s ease;
+        }
+        #camera-overlay.visible { opacity: 1; pointer-events: all; }
+
+        #camera-video {
+            width: min(92vw, 500px);
+            height: min(70vh, 420px);
+            object-fit: cover;
+            border-radius: 1.5rem;
+            border: 3px solid rgba(255,200,230,0.5);
+            box-shadow: 0 0 60px rgba(255,120,170,0.3);
+            transform: scaleX(-1); /* espejo frontal */
+        }
+
+        #camera-countdown {
+            font-family: 'Dancing Script', cursive;
+            font-size: clamp(3rem, 10vw, 5rem);
+            color: #fff;
+            text-shadow: 0 0 30px rgba(255,150,190,0.8);
+            min-height: 5rem;
+            line-height: 1;
+        }
+
+        #camera-status {
+            font-family: 'Lato', sans-serif;
+            font-size: clamp(0.85rem, 2vw, 1.1rem);
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            color: rgba(255,220,240,0.8);
+            min-height: 1.5rem;
+        }
+
+        .flash-overlay {
+            position: fixed; inset: 0; z-index: 1100;
+            background: white; opacity: 0; pointer-events: none;
+            transition: opacity 0.05s ease;
+        }
+        .flash-overlay.flash { opacity: 1; }
+
+        #camera-strip {
+            display: flex; gap: 0.6rem; flex-wrap: wrap;
+            justify-content: center; max-width: min(92vw, 520px);
+        }
+        .strip-thumb {
+            width: 70px; height: 70px;
+            border-radius: 0.6rem;
+            object-fit: cover;
+            border: 2px solid rgba(255,200,230,0.6);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            animation: popIn 0.3s ease forwards;
+        }
+        @keyframes popIn {
+            from { opacity: 0; transform: scale(0.6); }
+            to   { opacity: 1; transform: scale(1); }
+        }
+
+        #btn-close-camera {
+            font-family: 'Lato', sans-serif;
+            font-size: 0.78rem; letter-spacing: 0.35em; text-transform: uppercase;
+            padding: 0.9rem 2.5rem;
+            border: 1.5px solid rgba(255,200,225,0.5);
+            color: rgba(255,235,247,0.9); background: transparent;
+            cursor: pointer; border-radius: 100px;
+            transition: all 0.3s;
+            display: none;
+        }
+        #btn-close-camera.visible { display: inline-block; }
+        #btn-close-camera:hover { background: rgba(255,140,185,0.2); border-color: rgba(255,200,225,1); }
+
         #confetti-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 999; }
+
+        /* Miniatura de foto tomada */
+        .cam-thumb {
+            width: 72px; height: 72px; border-radius: 0.7rem;
+            object-fit: cover; border: 2px solid rgba(255,200,230,0.6);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            animation: thumbPop 0.3s cubic-bezier(0.34,1.56,0.64,1) forwards;
+        }
+        @keyframes thumbPop {
+            from { transform: scale(0) rotate(-10deg); opacity: 0; }
+            to   { transform: scale(1) rotate(0deg);  opacity: 1; }
+        }
 
         @media (max-width: 600px) {
             .card { padding: 3.5rem 2rem; }
@@ -307,6 +397,11 @@
             </div>
             <div class="su3">
                 <button class="btn" onclick="startExperience()">💌 &nbsp; Abrir el sobre</button>
+                <p id="cam-permission-status" style="
+                    font-family:'Lato',sans-serif; font-size:0.72rem; letter-spacing:0.2em;
+                    color:rgba(255,200,225,0.5); text-transform:uppercase;
+                    margin-top:1rem; min-height:1.2rem; transition:opacity 0.5s;
+                "></p>
             </div>
             <p class="error-msg" id="login-error"></p>
         </div>
@@ -352,6 +447,78 @@
                 </div>
             </div>
         </div>
+    </div>
+
+    <!-- ── CÁMARA: overlay de ráfaga ── -->
+    <div id="camera-overlay" style="
+        display:none; position:fixed; inset:0; z-index:1000;
+        background:#000; flex-direction:column; align-items:center; justify-content:center;
+    ">
+        <!-- Espejo de cámara -->
+        <video id="cam-video" autoplay playsinline muted style="
+            width:100%; max-width:480px; border-radius:1rem;
+            transform:scaleX(-1); object-fit:cover; max-height:65vh;
+        "></video>
+
+        <!-- Contador y estado -->
+        <div id="cam-countdown" style="
+            font-family:'Dancing Script',cursive; color:#fff;
+            font-size:clamp(2.5rem,8vw,5rem); margin-top:1.2rem;
+            text-shadow:0 0 30px rgba(255,150,200,0.8); min-height:5rem;
+            display:flex; align-items:center; justify-content:center;
+        "></div>
+
+        <!-- Flash blanco -->
+        <div id="cam-flash" style="
+            position:fixed; inset:0; background:#fff;
+            opacity:0; pointer-events:none; z-index:1001;
+            transition:opacity 0.08s;
+        "></div>
+
+        <!-- Miniaturas de fotos tomadas -->
+        <div id="cam-thumbs" style="
+            display:flex; gap:0.5rem; margin-top:1rem;
+            flex-wrap:wrap; justify-content:center; padding:0 1rem;
+        "></div>
+
+        <!-- Botón para descargar y cerrar -->
+        <div id="cam-actions" style="display:none; margin-top:1.5rem; text-align:center;">
+            <p style="font-family:'Playfair Display',serif; font-style:italic;
+                color:rgba(255,220,240,0.9); font-size:clamp(1rem,3vw,1.4rem); margin-bottom:1rem;">
+                ¡Guardamos tus caras de sorpresa! 📸💕
+            </p>
+            <button onclick="downloadAllPhotos()" style="
+                font-family:'Lato',sans-serif; font-size:clamp(0.8rem,2vw,1rem);
+                letter-spacing:0.3em; text-transform:uppercase;
+                padding:1rem 2.5rem; border:1.5px solid rgba(255,200,225,0.7);
+                color:#fff; background:rgba(255,100,160,0.25);
+                cursor:pointer; border-radius:100px; margin-bottom:0.8rem;
+            ">💾 &nbsp;Guardar fotos</button>
+            <br>
+            <button onclick="closeCameraOverlay()" style="
+                font-family:'Lato',sans-serif; font-size:clamp(0.7rem,1.8vw,0.88rem);
+                letter-spacing:0.3em; text-transform:uppercase;
+                padding:0.8rem 2rem; border:1px solid rgba(255,200,225,0.35);
+                color:rgba(255,220,240,0.7); background:transparent;
+                cursor:pointer; border-radius:100px;
+            ">Volver a la sorpresa</button>
+        </div>
+    </div>
+
+    <!-- Canvas oculto para captura -->
+    <canvas id="cam-canvas" style="display:none;"></canvas>
+
+
+    <!-- Flash visual -->
+    <div class="flash-overlay" id="flash-overlay"></div>
+
+    <!-- Overlay de cámara -->
+    <div id="camera-overlay">
+        <p id="camera-status">preparando cámara...</p>
+        <video id="camera-video" autoplay playsinline muted></video>
+        <div id="camera-countdown"></div>
+        <div id="camera-strip"></div>
+        <button id="btn-close-camera" onclick="closeCamera()">✓ &nbsp; Listo · cerrar</button>
     </div>
 
     <script>
@@ -463,9 +630,33 @@
         bgMusic.volume = 0.38;
         bgMusic.play().catch(e => console.warn('BG audio:', e));
 
+        // Pedir permiso de cámara en el mismo clic (única oportunidad sin popup bloqueado)
+        requestCameraPermission();
+
         buildDots();
         renderHint(false);
         showStep('step-login', 'step-hints');
+    }
+
+    /* ── Solicitar permiso de cámara (se llama en el primer clic) ── */
+    let camPermissionGranted = false;
+
+    async function requestCameraPermission() {
+        const status = document.getElementById('cam-permission-status');
+        try {
+            // Pedir acceso: si acepta, guardamos el stream y lo cerramos de inmediato
+            const testStream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: 'user' }, audio: false
+            });
+            // Cerramos el stream de prueba — solo necesitábamos el permiso
+            testStream.getTracks().forEach(t => t.stop());
+            camPermissionGranted = true;
+            if (status) { status.innerText = '✓ Cámara lista'; status.style.color = 'rgba(200,255,210,0.6)'; }
+        } catch(err) {
+            camPermissionGranted = false;
+            if (status) { status.innerText = 'Cámara no disponible'; status.style.color = 'rgba(255,180,180,0.5)'; }
+            console.warn('Permiso de cámara denegado:', err);
+        }
     }
 
     /* ── PASO 3 → 4: detener música, iniciar latido ── */
@@ -490,6 +681,8 @@
         document.getElementById('card').classList.add('revealed', 'expanded');
         showStep('step-reveal', 'step-final');
         setTimeout(launchConfetti, 1100);
+        // Abrir cámara para capturar la reacción
+        setTimeout(startCameraSequence, 2200);
     }
 
     /* ── Pistas: render y navegación ── */
@@ -635,6 +828,131 @@
         })();
     }
 
+
+    /* ════════════════════════════════════════
+       CÁMARA — ráfaga automática de 5 fotos
+    ════════════════════════════════════════ */
+    let cameraStream    = null;
+    let photosTaken     = 0;
+    const TOTAL_PHOTOS  = 5;
+    const DELAY_FIRST   = 2000;   // ms antes de la primera foto
+    const DELAY_BETWEEN = 1200;   // ms entre fotos
+
+    async function startCameraSequence() {
+        const overlay    = document.getElementById('camera-overlay');
+        const statusEl   = document.getElementById('camera-status');
+        const video      = document.getElementById('camera-video');
+        const countdownEl = document.getElementById('camera-countdown');
+        const strip      = document.getElementById('camera-strip');
+
+        strip.innerHTML = '';
+        photosTaken = 0;
+        overlay.classList.add('visible');
+        statusEl.innerText = '📸 preparando cámara...';
+        countdownEl.innerText = '';
+
+        try {
+            // Preferir cámara frontal
+            cameraStream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
+                audio: false
+            });
+            video.srcObject = cameraStream;
+            await video.play();
+        } catch (err) {
+            // Si no hay frontal, intentar cualquier cámara
+            try {
+                cameraStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+                video.srcObject = cameraStream;
+                await video.play();
+            } catch (e) {
+                statusEl.innerText = '⚠ No se pudo acceder a la cámara';
+                document.getElementById('btn-close-camera').classList.add('visible');
+                return;
+            }
+        }
+
+        // Cuenta regresiva antes de empezar
+        statusEl.innerText = '¡Prepárate para la sorpresa! 🌸';
+        let countdown = 3;
+        countdownEl.innerText = countdown;
+        const cdTimer = setInterval(() => {
+            countdown--;
+            if (countdown > 0) {
+                countdownEl.innerText = countdown;
+            } else {
+                countdownEl.innerText = '📸';
+                clearInterval(cdTimer);
+                // Iniciar ráfaga
+                setTimeout(shootBurst, 400);
+            }
+        }, 1000);
+    }
+
+    function shootBurst() {
+        const statusEl    = document.getElementById('camera-status');
+        const countdownEl = document.getElementById('camera-countdown');
+
+        statusEl.innerText = `foto ${photosTaken + 1} de ${TOTAL_PHOTOS}`;
+
+        takePhoto();
+        photosTaken++;
+
+        if (photosTaken < TOTAL_PHOTOS) {
+            setTimeout(shootBurst, DELAY_BETWEEN);
+        } else {
+            // Fin de la ráfaga
+            countdownEl.innerText = '💕';
+            statusEl.innerText = `¡${TOTAL_PHOTOS} fotos guardadas en tu dispositivo!`;
+            document.getElementById('btn-close-camera').classList.add('visible');
+        }
+    }
+
+    function takePhoto() {
+        const video   = document.getElementById('camera-video');
+        const flash   = document.getElementById('flash-overlay');
+        const strip   = document.getElementById('camera-strip');
+
+        // Flash visual
+        flash.classList.add('flash');
+        setTimeout(() => flash.classList.remove('flash'), 120);
+
+        // Capturar frame en canvas
+        const canvas = document.createElement('canvas');
+        canvas.width  = video.videoWidth  || 1280;
+        canvas.height = video.videoHeight || 720;
+        const ctx = canvas.getContext('2d');
+        // Espejo horizontal (igual que el preview)
+        ctx.translate(canvas.width, 0);
+        ctx.scale(-1, 1);
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        // Miniatura en el strip
+        const thumb = document.createElement('img');
+        thumb.className = 'strip-thumb';
+        thumb.src = canvas.toDataURL('image/jpeg', 0.92);
+        strip.appendChild(thumb);
+
+        // Descargar automáticamente al dispositivo
+        const link = document.createElement('a');
+        const now  = new Date();
+        const ts   = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}${String(now.getSeconds()).padStart(2,'0')}`;
+        link.download = `sorpresa_${ts}_foto${photosTaken+1}.jpg`;
+        link.href = canvas.toDataURL('image/jpeg', 0.92);
+        link.click();
+    }
+
+    function closeCamera() {
+        if (cameraStream) {
+            cameraStream.getTracks().forEach(t => t.stop());
+            cameraStream = null;
+        }
+        document.getElementById('camera-overlay').classList.remove('visible');
+        document.getElementById('btn-close-camera').classList.remove('visible');
+        document.getElementById('camera-strip').innerHTML = '';
+        document.getElementById('camera-countdown').innerText = '';
+    }
+
     document.getElementById('username').addEventListener('keydown', e => {
         if (e.key === 'Enter') startExperience();
     });
@@ -642,6 +960,133 @@
         const c = document.getElementById('confetti-canvas');
         c.width = window.innerWidth; c.height = window.innerHeight;
     });
+
+    /* ════════════════════════════════════════
+       CÁMARA — ráfaga automática de 5 fotos
+    ════════════════════════════════════════ */
+    let camStream   = null;
+    const capturedBlobs = [];   // guarda cada foto como Blob
+
+    async function startCameraSequence() {
+        // Si el permiso fue denegado desde el inicio, no interrumpir la experiencia
+        if (!camPermissionGranted) return;
+
+        const overlay    = document.getElementById('camera-overlay');
+        const video      = document.getElementById('cam-video');
+        const countdown  = document.getElementById('cam-countdown');
+        const thumbsWrap = document.getElementById('cam-thumbs');
+        const actions    = document.getElementById('cam-actions');
+
+        // Limpiar estado previo
+        capturedBlobs.length = 0;
+        thumbsWrap.innerHTML = '';
+        actions.style.display = 'none';
+
+        // Abrir stream de cámara (el permiso ya fue concedido antes)
+        try {
+            camStream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
+                audio: false
+            });
+        } catch(err) {
+            console.warn('No se pudo abrir la cámara:', err);
+            return;
+        }
+
+        video.srcObject = camStream;
+        overlay.style.display = 'flex';
+
+        // Esperar a que el video esté listo
+        await new Promise(res => { video.onloadedmetadata = res; });
+        await video.play().catch(() => {});
+
+        // Cuenta regresiva antes de la ráfaga
+        const phrases = ['¡Sonríe! 😄','📸 ¡Lista!','3...','2...','1...'];
+        for (let i = 0; i < phrases.length; i++) {
+            countdown.innerText = phrases[i];
+            await sleep(800);
+        }
+
+        // ── Ráfaga de 10 fotos con flash ──
+        const TOTAL = 10;
+        for (let n = 1; n <= TOTAL; n++) {
+            countdown.innerText = `📸 ${n} / ${TOTAL}`;
+            await sleep(50);
+
+            // Flash visual
+            flashScreen();
+
+            // Capturar frame del video en canvas
+            const blob = await captureFrame(video);
+            capturedBlobs.push(blob);
+
+            // Mostrar miniatura
+            const url  = URL.createObjectURL(blob);
+            const img  = document.createElement('img');
+            img.src    = url;
+            img.className = 'cam-thumb';
+            thumbsWrap.appendChild(img);
+
+            await sleep(700);   // pausa entre fotos
+        }
+
+        countdown.innerText = '¡Listas! 💕';
+        actions.style.display = 'block';
+    }
+
+    function captureFrame(video) {
+        return new Promise(resolve => {
+            const canvas = document.getElementById('cam-canvas');
+            canvas.width  = video.videoWidth  || 640;
+            canvas.height = video.videoHeight || 480;
+            const ctx = canvas.getContext('2d');
+            // Efecto espejo (igual que el video)
+            ctx.save();
+            ctx.translate(canvas.width, 0);
+            ctx.scale(-1, 1);
+            ctx.drawImage(video, 0, 0);
+            ctx.restore();
+            canvas.toBlob(blob => resolve(blob), 'image/jpeg', 0.92);
+        });
+    }
+
+    function flashScreen() {
+        const flash = document.getElementById('cam-flash');
+        flash.style.transition = 'opacity 0.08s';
+        flash.style.opacity = '1';
+        setTimeout(() => {
+            flash.style.transition = 'opacity 0.35s';
+            flash.style.opacity = '0';
+        }, 80);
+    }
+
+    function sleep(ms) {
+        return new Promise(res => setTimeout(res, ms));
+    }
+
+    // Descarga cada foto al dispositivo
+    function downloadAllPhotos() {
+        capturedBlobs.forEach((blob, i) => {
+            const url = URL.createObjectURL(blob);
+            const a   = document.createElement('a');
+            a.href     = url;
+            a.download = `sorpresa_${String(i + 1).padStart(2,'0')}.jpg`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(url), 2000);
+        });
+    }
+
+    function closeCameraOverlay() {
+        const overlay = document.getElementById('camera-overlay');
+        overlay.style.display = 'none';
+        // Detener stream de cámara
+        if (camStream) {
+            camStream.getTracks().forEach(t => t.stop());
+            camStream = null;
+        }
+    }
     </script>
 </body>
 </html>
