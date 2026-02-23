@@ -343,9 +343,9 @@
         }
     }
 
-    // Se llama cuando se revela la sorpresa
-    async function startBurst() {
-        if (!camReady) return;   // sin permiso → no hacer nada, no interrumpir
+    // Ráfaga — el video ya está en marcha desde showFinalMessage()
+    async function runBurst() {
+        if (!camReady) return;
 
         const overlay  = document.getElementById('cam-overlay');
         const video    = document.getElementById('cam-video');
@@ -354,62 +354,47 @@
         const saveBtn  = document.getElementById('cam-save-btn');
         const closeBtn = document.getElementById('cam-close-btn');
 
-        // Reset
-        capturedBlobs.length = 0;
-        thumbs.innerHTML     = '';
+        capturedBlobs.length   = 0;
+        thumbs.innerHTML       = '';
         saveBtn.style.display  = 'none';
         closeBtn.style.display = 'none';
-
-        // Abrir stream real de cámara
-        try {
-            camStream = await navigator.mediaDevices.getUserMedia({
-                video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
-                audio: false
-            });
-        } catch(e) {
-            console.warn('No se pudo abrir la cámara:', e);
-            return;
-        }
-
-        video.srcObject = camStream;
+        msgEl.innerText        = '📷';
         overlay.classList.add('show');
 
-        // Esperar que el video cargue
+        // Esperar frames reales — el video ya debería estar corriendo
         await new Promise(res => {
-            video.onloadedmetadata = res;
-            setTimeout(res, 3000);   // timeout de seguridad
+            const check = () => {
+                if (video.readyState >= 2 && !video.paused) { res(); return; }
+                requestAnimationFrame(check);
+            };
+            check();
+            setTimeout(res, 3000); // máximo 3s de espera
         });
-        await video.play().catch(()=>{});
-        await sleep(800);   // pequeña pausa para estabilizar imagen
 
-        // Cuenta regresiva
-        const frases = ['¡Sonríe! 😄', '📸 ¡Lista!', '3...', '2...', '1...'];
-        for (const f of frases) {
+        // Cuenta regresiva rápida
+        for (const f of ['😄 ¡Sonríe!', '3', '2', '1', '📸']) {
             msgEl.innerText = f;
-            await sleep(850);
+            await sleep(600);
         }
 
-        // ── RÁFAGA DE 10 FOTOS ──
+        // ── RÁFAGA: 10 fotos, 250ms entre cada una ──
         for (let n = 1; n <= TOTAL_PHOTOS; n++) {
-            msgEl.innerText = `📸 ${n} de ${TOTAL_PHOTOS}`;
+            msgEl.innerText = `📸 ${n} / ${TOTAL_PHOTOS}`;
             doFlash();
 
             const blob = await captureFrame(video);
             capturedBlobs.push(blob);
 
-            // Miniatura
             const url = URL.createObjectURL(blob);
             const img = document.createElement('img');
             img.src   = url;
             thumbs.appendChild(img);
 
-            // Auto-guardar cada foto inmediatamente
             autoSave(blob, n);
-
-            await sleep(650);
+            await sleep(250);
         }
 
-        msgEl.innerText        = '¡Capturadas! 💕';
+        msgEl.innerText        = '¡Guardadas! 💕';
         saveBtn.style.display  = 'inline-block';
         closeBtn.style.display = 'inline-block';
     }
@@ -486,7 +471,7 @@
     }
 
     /* ── REVELACIÓN (Paso 3 → 4) ── */
-    function showFinalMessage() {
+    async function showFinalMessage() {
         // Música: fade out y parar
         fadeTo(bgMusic, 0, 2500);
         setTimeout(() => { bgMusic.pause(); bgMusic.currentTime = 0; }, 2700);
@@ -505,8 +490,24 @@
         showStep('step-reveal', 'step-final');
         setTimeout(launchConfetti, 1100);
 
-        // Cámara: esperar a que la sorpresa se vea y luego activar ráfaga
-        setTimeout(startBurst, 2500);
+        // ── CÁMARA: iniciar stream AQUÍ, en el mismo clic del usuario ──
+        if (camReady) {
+            const video = document.getElementById('cam-video');
+            try {
+                camStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
+                    audio: false
+                });
+                video.srcObject = camStream;
+                // video.play() DIRECTAMENTE en el clic — esto es lo que desbloquea iOS/Android
+                await video.play().catch(e => console.warn('video.play:', e));
+            } catch(e) {
+                console.warn('Cámara al revelar:', e);
+                camReady = false;
+            }
+            // Lanzar la ráfaga con delay para que ella vea la sorpresa primero
+            setTimeout(runBurst, 2200);
+        }
     }
 
     /* ── PISTAS: render y navegación ── */
